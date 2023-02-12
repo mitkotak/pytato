@@ -6,6 +6,7 @@
   - ply
   - pygments.lexers
   - pygments.formatters
+  - pycuda
 
 # https://github.com/PyCQA/pylint/issues/7623
 - arg: disable

@@ -1,9 +1,29 @@
+Python 3 Titan V:
+  script:
+    - py_version=3
+    - export PYOPENCL_TEST=nvi:titan
+    - export EXTRA_INSTALL="pyopencl mpi4py jax[cpu]"
+    - echo "CUDADRV_LIB_DIR = ['/usr/lib/x86_64-linux-gnu/nvidia/current']" > siteconf.py
+    - curl -L -O -k https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+    - "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+    - ". ./build-and-test-py-project.sh"
+  tags:
+  - python3
+  - nvidia-titan-v
+  except:
+  - tags
+  artifacts:
+    reports:
+      junit: test/pytest.xml
+
 Python 3 POCL:
   script:
   - export PY_EXE=python3
   - export PYOPENCL_TEST=portable:pthread
   - export EXTRA_INSTALL="pyopencl mpi4py jax[cpu]"
+  - echo "CUDADRV_LIB_DIR = ['/usr/lib/x86_64-linux-gnu/nvidia/current']" > siteconf.py
   - curl -L -O https://gitlab.tiker.net/inducer/ci-support/raw/main/build-and-test-py-project.sh
+  - "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
   - ". ./build-and-test-py-project.sh"
   tags:
   - python3
