@@ -42,9 +42,10 @@ class StringMapper(CachedMapper[ArrayOrNames]):
         result = normalize_outputs(expr)
         preproc_result = preprocess_loopy(result, target=lp.CudaTarget())
         for _, subexpr in list(preproc_result.outputs._data.items()):
-            expression = self.rec(subexpr)
-            self.string_map[subexpr] = expression
-            
+            if not isinstance(subexpr, Placeholder):
+                expression = self.rec(subexpr)
+                self.string_map[subexpr] = expression
+    
 
     def map_placeholder(self, expr: Placeholder):
         placeholder = self.vng("_pt_N")
@@ -54,11 +55,12 @@ class StringMapper(CachedMapper[ArrayOrNames]):
         operation = self.vng("_pt_N")
         self.string_map[expr] = self.vng("_pt_N")
         for _, bnd in list(expr.bindings.items()):
-            placeholder = self.rec(bnd)
-            self.string_map[bnd] = placeholder
-            if not placeholder in self.dep_map:
-                self.dep_map[placeholder] = set()
-            self.dep_map[placeholder].add(operation)
+            if not isinstance(bnd, Placeholder):
+                index_lambda = self.rec(bnd)
+                self.string_map[bnd] = index_lambda
+                if not index_lambda in self.dep_map:
+                    self.dep_map[index_lambda] = set()
+                self.dep_map[index_lambda].add(operation)
         return operation
 
     def topological_sort(self):
@@ -84,3 +86,16 @@ class StringMapper(CachedMapper[ArrayOrNames]):
             levels.append(len(level_nodes))
             levels_ops.append(level_nodes_ops)
         return levels, levels_ops
+    
+def weight_calculator(levels_ops):
+    levels_weights = np.zeros(shape=(len(levels_ops)))
+    for level_i,level_op in enumerate(levels_ops):
+        level_bytes = 0
+        for node in level_op:
+            assert isinstance(node, IndexLambda)
+            level_bytes += node.size * np.dtype(node.dtype).itemsize
+            for key,bnd in node.bindings.items():
+                level_bytes += bnd.size * np.dtype(bnd.dtype).itemsize
+        levels_weights[level_i] = level_bytes
+    return levels_weights/sum(levels_weights)
+            
